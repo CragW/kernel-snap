@@ -1,0 +1,48 @@
+DPKG_ARCH := $(shell dpkg --print-architecture)
+RELEASE := xenial
+ENV := DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true LC_ALL=C LANG=C
+
+ifneq (,$(findstring amd64,$(DPKG_ARCH)))
+PACKAGE := linux-signed-generic
+endif
+
+install : KVERS = $(shell ls -1 chroot/boot/vmlinuz-*| tail -1 |sed 's/^.*vmlinuz-//;s/.efi.signed$$//')
+
+all:
+	debootstrap --variant=minbase $(RELEASE) chroot
+	cp /etc/apt/sources.list chroot/etc/apt/sources.list
+	echo "deb http://ppa.launchpad.net/snappy-dev/image/ubuntu xenial main" >> chroot/etc/apt/sources.list
+	# @echo "Will install kernel $(PACKAGE)"
+	mkdir -p chroot/etc/initramfs-tools/conf.d
+	echo "COMPRESS=lzma" >chroot/etc/initramfs-tools/conf.d/ubuntu-core.conf
+	$(ENV) chroot chroot apt-get -y update
+	$(ENV) chroot chroot apt-get -y --allow-unauthenticated install initramfs-tools-ubuntu-core linux-firmware xz-utils crda
+	mount --bind /proc chroot/proc
+	mount --bind /sys chroot/sys
+	# $(ENV) chroot chroot apt-get -y --allow-unauthenticated install $(PACKAGE)
+	if [ "x$(LOCAL_KERNEL_PATH)" != "x" ]; then \
+		cp $(LOCAL_KERNEL_PATH)/linux-image-*.deb chroot/; \
+		ls chroot/*.deb | sed 's/^chroot\///' | $(ENV) xargs chroot chroot dpkg -i; \
+	fi
+	umount chroot/sys
+	umount chroot/proc
+
+install:
+	mkdir -p $(DESTDIR)/lib $(DESTDIR)/meta $(DESTDIR)/firmware $(DESTDIR)/modules
+	cp -ar chroot/boot/vmlinu?-* $(DESTDIR)/kernel.img;
+	cp -ar chroot/boot/initrd.img-* $(DESTDIR)/initrd.img
+	# copy meta data into the snap
+	cp -ar chroot/boot/abi-* chroot/boot/System.map-* chroot/boot/config-* $(DESTDIR)/
+	# copy modules and firmware
+	cp -a chroot/lib/modules/* $(DESTDIR)/modules/
+	cp -a chroot/lib/firmware/* $(DESTDIR)/firmware/
+	# copy all licenses into the snap
+	cp /usr/share/common-licenses/GPL-2 $(DESTDIR)/
+	mv chroot/usr/share/doc/linux-firmware/copyright $(DESTDIR)/firmware/
+	mv chroot/usr/share/doc/linux-firmware/licenses $(DESTDIR)/firmware/
+	# create all links
+	cd $(DESTDIR)/lib; ln -s ../firmware .
+	cd $(DESTDIR)/lib; ln -s ../modules .
+	cd $(DESTDIR); ln -s kernel.img vmlinuz-$(KVERS)
+	cd $(DESTDIR); ln -s kernel.img vmlinuz
+	cd $(DESTDIR); ln -s initrd.img initrd.img-$(KVERS)
