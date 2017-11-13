@@ -22,18 +22,14 @@ parts:
       fakeroot debian/rules binary-generic
     make-parameters:
       - LOCAL_KERNEL_PATH=$SNAPCRAFT_PART_INSTALL/../
+      - RELEASE=xenial
     build-packages:
       - debootstrap
       - lsb-release
-  firmware:
-    plugin: nil
-    stage-packages:
-      - linux-firmware
+  marvell:
+    source: mrvl
+    after: [kernel]
+    plugin: dump
     organize:
-      lib/firmware: firmware
-    prime:
-      - -usr
-      - -lib
-    build-packages:
-      - cpio
-      - libssl-dev
+        pcie8897_uapsta.bin: lib/firmware/mrvl/pcie8897_uapsta.bin
+

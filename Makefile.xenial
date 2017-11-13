@@ -1,17 +1,26 @@
-DPKG_ARCH := $(shell dpkg --print-architecture)
-RELEASE := xenial
-ENV := DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true LC_ALL=C LANG=C
 
-ifneq (,$(findstring amd64,$(DPKG_ARCH)))
-PACKAGE := linux-signed-generic
-endif
+# DPKG_ARCH := $(shell dpkg --print-architecture)
+DPKG_ARCH := amd64
+
+#ifneq (,$(findstring amd64,$(DPKG_ARCH)))
+#	PACKAGE := linux-signed-generic
+#endif
+
+# RELEASE := xenial
+RELEASE ?= xenial
+
+# APT SOURCE
+APTLIST := /etc/apt/sources.list
+
+ENV := DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true LC_ALL=C LANG=C
 
 install : KVERS = $(shell ls -1 chroot/boot/vmlinuz-*| tail -1 |sed 's/^.*vmlinuz-//;s/.efi.signed$$//')
 
 all:
+	pause
 	debootstrap --variant=minbase $(RELEASE) chroot
-	cp /etc/apt/sources.list chroot/etc/apt/sources.list
-	echo "deb http://ppa.launchpad.net/snappy-dev/image/ubuntu xenial main" >> chroot/etc/apt/sources.list
+	cp $(APTLIST) chroot/etc/apt/sources.list
+	echo "deb http://ppa.launchpad.net/snappy-dev/image/ubuntu $(RELEASE) main" >> chroot/etc/apt/sources.list
 	# @echo "Will install kernel $(PACKAGE)"
 	mkdir -p chroot/etc/initramfs-tools/conf.d
 	echo "COMPRESS=lzma" >chroot/etc/initramfs-tools/conf.d/ubuntu-core.conf
