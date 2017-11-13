@@ -17,7 +17,6 @@ ENV := DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true LC_ALL=C 
 install : KVERS = $(shell ls -1 chroot/boot/vmlinuz-*| tail -1 |sed 's/^.*vmlinuz-//;s/.efi.signed$$//')
 
 all:
-	pause
 	debootstrap --variant=minbase $(RELEASE) chroot
 	cp $(APTLIST) chroot/etc/apt/sources.list
 	echo "deb http://ppa.launchpad.net/snappy-dev/image/ubuntu $(RELEASE) main" >> chroot/etc/apt/sources.list
