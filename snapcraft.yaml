@@ -17,7 +17,7 @@ parts:
     prepare: |
       cp $SNAPCRAFT_STAGE/../Makefile.xenial $SNAPCRAFT_PART_INSTALL/../src
       cp $SNAPCRAFT_STAGE/../Makefile.xenial $SNAPCRAFT_PART_INSTALL/../build
-      cd $SNAPCRAFT_STAGE/build
+      cd $SNAPCRAFT_PART_INSTALL/../build
       fakeroot debian/rules clean
       fakeroot debian/rules binary-generic
     make-parameters:
@@ -25,6 +25,7 @@ parts:
     build-packages:
       - debootstrap
       - lsb-release
+      - fakeroot
   firmware:
     plugin: nil
     stage-packages:
